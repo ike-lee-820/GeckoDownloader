@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:name=".GdlApp"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_app"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_app"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.GeckoDownloader"
+        tools:targetApi="34">
+
+        <!-- WorkManager is initialised by GdlApp through Hilt, so the default initializer is removed. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            System download handler. http, https and ftp links that point at a common file type
+            show this app in the "open with" chooser. The suffixes are matched with pathSuffix.
+            Links without a file suffix are handled by the in-app browser only.
+        -->
+        <activity
+            android:name=".ui.DownloadRequestActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.GeckoDownloader.Transparent">
+            <intent-filter android:label="@string/download_with_app">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:pathSuffix=".zip" />
+                <data android:scheme="https" android:pathSuffix=".zip" />
+                <data android:scheme="http" android:pathSuffix=".apk" />
+                <data android:scheme="https" android:pathSuffix=".apk" />
+                <data android:scheme="http" android:pathSuffix=".pdf" />
+                <data android:scheme="https" android:pathSuffix=".pdf" />
+                <data android:scheme="http" android:pathSuffix=".mp4" />
+                <data android:scheme="https" android:pathSuffix=".mp4" />
+                <data android:scheme="http" android:pathSuffix=".mkv" />
+                <data android:scheme="https" android:pathSuffix=".mkv" />
+                <data android:scheme="http" android:pathSuffix=".mp3" />
+                <data android:scheme="https" android:pathSuffix=".mp3" />
+                <data android:scheme="http" android:pathSuffix=".m3u8" />
+                <data android:scheme="https" android:pathSuffix=".m3u8" />
+                <data android:scheme="http" android:pathSuffix=".7z" />
+                <data android:scheme="https" android:pathSuffix=".7z" />
+                <data android:scheme="http" android:pathSuffix=".rar" />
+                <data android:scheme="https" android:pathSuffix=".rar" />
+                <data android:scheme="http" android:pathSuffix=".iso" />
+                <data android:scheme="https" android:pathSuffix=".iso" />
+                <data android:scheme="ftp" />
+            </intent-filter>
+            <!-- Share sheet: "Share link" from other apps creates a task directly. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <!-- Custom action for other apps that want to queue a download. -->
+            <intent-filter>
+                <action android:name="com.ikelee.geckodl.action.ADD_DOWNLOAD" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".download.DownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".download.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
