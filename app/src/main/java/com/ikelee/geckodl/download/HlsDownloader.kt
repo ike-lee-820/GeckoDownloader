@@ -29,7 +29,8 @@ import kotlin.math.min
 class HlsDownloader(
     private val context: Context,
     private val http: OkHttpClient,
-    private val limiter: BandwidthLimiter
+    private val limiter: BandwidthLimiter,
+    private val onBytes: (Int) -> Unit = {}
 ) {
 
     data class Result(val totalBytes: Long, val segments: Int)
@@ -168,6 +169,7 @@ class HlsDownloader(
             if (!resp.isSuccessful) throw IOException("HTTP ${resp.code} for $url")
             val bytes = resp.body!!.bytes()
             limiter.consume(bytes.size)
+            onBytes(bytes.size)
             bytes
         }
     }

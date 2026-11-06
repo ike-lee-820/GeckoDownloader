@@ -59,6 +59,13 @@ class DownloadEngine @Inject constructor(
     private val jobs = HashMap<Long, Job>()
     private val globalLimiter = BandwidthLimiter()
 
+    // Bytes received per task since start, and the value at the previous speed sample.
+    private val counters = java.util.concurrent.ConcurrentHashMap<Long, java.util.concurrent.atomic.AtomicLong>()
+    private val lastSample = HashMap<Long, Long>()
+
+    private fun counterFor(id: Long) =
+        counters.getOrPut(id) { java.util.concurrent.atomic.AtomicLong() }
+
     private val _activeCount = MutableStateFlow(0)
     val activeCount: StateFlow<Int> = _activeCount.asStateFlow()
 
@@ -70,6 +77,19 @@ class DownloadEngine @Inject constructor(
     init {
         scope.launch { settings.settings.collect { globalLimiter.bytesPerSecond = it.globalLimitKbps * 1024L } }
         scope.launch { schedule() }
+        // Speed sampler: once a second, bytes received since the last sample, per task.
+        scope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1_000L)
+                val next = HashMap<Long, Long>()
+                for ((id, counter) in counters) {
+                    val now = counter.get()
+                    next[id] = now - (lastSample[id] ?: 0L)
+                    lastSample[id] = now
+                }
+                _speeds.value = next
+            }
+        }
     }
 
     suspend fun enqueue(request: NewDownload): Long {
@@ -119,6 +139,8 @@ class DownloadEngine @Inject constructor(
 
     suspend fun remove(id: Long) {
         cancel(id)
+        counters.remove(id)
+        lastSample.remove(id)
         chunks.clear(id)
         downloads.delete(id)
     }
@@ -180,6 +202,7 @@ class DownloadEngine @Inject constructor(
     }
 
     private suspend fun runHttp(task: DownloadEntity, spec: RequestSpec, limiter: BandwidthLimiter, retries: Int) {
+        val counter = counterFor(task.id)
         val downloader = HttpDownloader(http, globalLimiter, limiter)
         var current = task
         var stored = chunks.forTask(task.id)
@@ -201,7 +224,7 @@ class DownloadEngine @Inject constructor(
                 output = out,
                 chunks = list,
                 retries = retries,
-                onProgress = { _ -> /* live speed is sampled from chunk counters; see TODO in README */ },
+                onProgress = { delta -> counter.addAndGet(delta) },
                 onChunkUpdate = { snapshot ->
                     chunks.upsertAll(snapshot.map { it.copy(taskId = task.id) })
                     val done = snapshot.sumOf { it.done }
@@ -220,7 +243,8 @@ class DownloadEngine @Inject constructor(
     }
 
     private suspend fun runHls(task: DownloadEntity, spec: RequestSpec, limiter: BandwidthLimiter, retries: Int) {
-        val hls = HlsDownloader(context, http, globalLimiter)
+        val counter = counterFor(task.id)
+        val hls = HlsDownloader(context, http, globalLimiter) { n -> counter.addAndGet(n.toLong()) }
         val result = hls.run(
             taskId = task.id,
             spec = spec,
