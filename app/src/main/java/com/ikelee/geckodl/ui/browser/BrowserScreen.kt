@@ -1,7 +1,6 @@
 package com.ikelee.geckodl.ui.browser
 
 import android.content.Context
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -10,10 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -104,7 +103,9 @@ fun BrowserScreen(vm: BrowserViewModel = hiltViewModel()) {
 
     // 首个标签；设置变化实时应用到所有 WebView。
     LaunchedEffect(Unit) {
-        if (holder.tabs.value.isEmpty()) holder.newTab("https://www.google.com", s)
+        if (holder.tabs.value.isEmpty()) {
+            holder.newTab("https://www.google.com", s)
+        }
     }
     LaunchedEffect(s.javaScriptEnabled, s.desktopUa, s.sniffEnabled, s.searchEngine) {
         holder.applySettings(s)
@@ -162,26 +163,15 @@ fun BrowserScreen(vm: BrowserViewModel = hiltViewModel()) {
             )
         }
 
+        // 固定容器：WebView 只在创建时 addView 一次，重组时仅同步可见性。
+        // 反复 remove/add 正在回调中的 WebView 会造成打开页面闪退。
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
-                factory = { ctx -> FrameLayout(ctx) },
-                update = { container ->
-                    val v = holder.view(activeId)
-                    if (v == null) {
-                        container.removeAllViews()
-                    } else if (container.getChildAt(0) !== v) {
-                        (v.parent as? ViewGroup)?.removeView(v)
-                        container.removeAllViews()
-                        container.addView(
-                            v,
-                            FrameLayout.LayoutParams(
-                                FrameLayout.LayoutParams.MATCH_PARENT,
-                                FrameLayout.LayoutParams.MATCH_PARENT
-                            )
-                        )
-                    }
-                }
+                factory = { ctx ->
+                    FrameLayout(ctx).also { holder.attachContainer(it) }
+                },
+                update = { holder.syncVisibility() }
             )
         }
 
@@ -229,8 +219,15 @@ fun BrowserScreen(vm: BrowserViewModel = hiltViewModel()) {
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 } else {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(sniffed, key = { it.url }) { res ->
+                    // 普通 Column + 限高滚动，避免 LazyColumn 在无限高度约束下崩溃。
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 360.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        sniffed.forEach { res ->
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 Text("${res.kind} · ${res.url}", maxLines = 2)
                                 FilledTonalButton(onClick = {
