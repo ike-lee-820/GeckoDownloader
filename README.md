@@ -13,10 +13,14 @@ gradle wrapper --gradle-version 8.7 --distribution-type bin
 ./gradlew :app:assembleDebug
 ```
 
-GeckoView is pinned in `gradle/libs.versions.toml` to `159.0.20261102144711` from
-`https://maven.mozilla.org/maven2/` (the `geckoview-release` artifact). The version was supplied
-by the project owner. It was not resolved by the author because the build environment blocks
-maven.mozilla.org. Resolve it once before the first build.
+GeckoView is pinned in `gradle/libs.versions.toml` to `120.0.20231113165053`, using the real
+stable coordinate `org.mozilla.geckoview:geckoview` from `https://maven.mozilla.org/maven2/`.
+The original `geckoview-release:159.0.20261102144711` coordinate does not exist on that
+repository and made every CI build fail at dependency resolution; the pinned version is a
+verified published AAR whose API/compileSdk 34 requirement matches this project. It can be
+overridden with `-PgeckoviewVersion=...` (or the `geckoview_version` workflow input).
+
+The omni AAR contains all ABIs; `abiFilters` keeps only `arm64-v8a` in the packaged APK.
 
 Release builds enable R8 and resource shrinking. `abiFilters` keeps **only `arm64-v8a`**
 (ARMv8-A 64-bit). The `geckoview-release` AAR contains all ABIs, and `abiFilters` strips the

@@ -12,9 +12,10 @@ plugins {
 val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("26.11.0")
 val appVersionCode: Int = providers.gradleProperty("appVersionCode").map { it.toInt() }.getOrElse(2611000)
 
-// GeckoView is resolved from maven.mozilla.org. The version in libs.versions.toml was
-// supplied by the project owner and is not published there, so CI resolves the real
-// latest release from maven-metadata.xml and injects it with -PgeckoviewVersion.
+// GeckoView stable channel artifact is "org.mozilla.geckoview:geckoview" (the earlier
+// "geckoview-release" coordinate does not exist on maven.mozilla.org). The pinned version
+// in libs.versions.toml is a verified published build; CI can override it with
+// -PgeckoviewVersion without touching this file.
 val geckoviewVersion: String = providers.gradleProperty("geckoviewVersion")
     .getOrElse(libs.versions.geckoview.get())
 
@@ -101,5 +102,5 @@ dependencies {
 
     // GeckoView release channel, resolved from maven.mozilla.org (see settings.gradle.kts).
     // Version is overridden in CI by -PgeckoviewVersion; local builds use the catalog value.
-    implementation("org.mozilla.geckoview:geckoview-release:$geckoviewVersion")
+    implementation("org.mozilla.geckoview:geckoview:$geckoviewVersion")
 }

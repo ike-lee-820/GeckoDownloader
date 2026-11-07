@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ''
+      geckoview_version:
+        description: 'GeckoView 版本，留空用已验证的 120.0.20231113165053'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -131,45 +136,13 @@ jobs:
           unzip -q -o "$RUNNER_TEMP/gradle-8.7-bin.zip" -d "$RUNNER_TEMP/gradle-dist"
           echo "$RUNNER_TEMP/gradle-dist/gradle-8.7/bin" >> "$GITHUB_PATH"
 
-      - name: Resolve GeckoView version from Mozilla Maven
-        id: geckoview
-        shell: bash
-        run: |
-          set -euo pipefail
-          REPO_URL="https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-release"
-          META="$RUNNER_TEMP/gv-metadata.xml"
-          curl -sSfL --retry 3 --retry-delay 5 -m 90 -o "$META" "$REPO_URL/maven-metadata.xml"
-          V=$(python3 - "$META" <<'PY'
-          import sys, xml.etree.ElementTree as ET
-          root = ET.parse(sys.argv[1]).getroot()
-          v = root.findtext("versioning/release") or root.findtext("versioning/latest") or ""
-          if not v:
-              versions = [e.text for e in root.findall("versioning/versions/version") if e.text]
-              v = versions[-1] if versions else ""
-          print(v.strip())
-          PY
-          )
-          if [[ -z "$V" ]]; then
-            echo "::error::无法从 maven-metadata.xml 解析 GeckoView 版本"
-            exit 1
-          fi
-          # Confirm both POM and AAR actually exist before handing the version to Gradle.
-          curl -sSfL --retry 2 -m 90 -o /dev/null \
-            "$REPO_URL/$V/geckoview-release-$V.pom"
-          curl -sSfL --retry 2 -m 90 --range 0-0 -o /dev/null \
-            "$REPO_URL/$V/geckoview-release-$V.aar" || \
-            curl -sSfL --retry 2 -m 90 -o /dev/null \
-            "$REPO_URL/$V/geckoview-release-$V.aar"
-          echo "Resolved GeckoView: $V"
-          echo "version=$V" >> "$GITHUB_OUTPUT"
-
       - name: Build arm64-v8a release APK
         id: build
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
-          GV_VERSION: ${{ steps.geckoview.outputs.version }}
+          GV_VERSION: ${{ inputs.geckoview_version || '120.0.20231113165053' }}
         run: |
           set -euo pipefail
           gradle --version
@@ -179,7 +152,7 @@ jobs:
             -PgeckoviewVersion="${GV_VERSION}" 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
 
       - name: Report build failure
-        if: failure() && steps.build.outcome == 'failure'
+        if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
