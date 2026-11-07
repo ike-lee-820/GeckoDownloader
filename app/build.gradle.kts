@@ -12,6 +12,12 @@ plugins {
 val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("26.11.0")
 val appVersionCode: Int = providers.gradleProperty("appVersionCode").map { it.toInt() }.getOrElse(2611000)
 
+// GeckoView is resolved from maven.mozilla.org. The version in libs.versions.toml was
+// supplied by the project owner and is not published there, so CI resolves the real
+// latest release from maven-metadata.xml and injects it with -PgeckoviewVersion.
+val geckoviewVersion: String = providers.gradleProperty("geckoviewVersion")
+    .getOrElse(libs.versions.geckoview.get())
+
 android {
     namespace = "com.ikelee.geckodl"
     compileSdk = 34
@@ -94,5 +100,6 @@ dependencies {
     implementation("androidx.documentfile:documentfile:1.0.1")
 
     // GeckoView release channel, resolved from maven.mozilla.org (see settings.gradle.kts).
-    implementation(libs.geckoview)
+    // Version is overridden in CI by -PgeckoviewVersion; local builds use the catalog value.
+    implementation("org.mozilla.geckoview:geckoview-release:$geckoviewVersion")
 }
