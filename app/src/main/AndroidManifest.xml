@@ -62,7 +62,7 @@
         <!--
             System download handler. http, https and ftp links that point at a common file type
             show this app in the "open with" chooser. The suffixes are matched with pathSuffix.
-            Links without a file suffix are handled by the in-app browser only.
+            Links without a suffix can be pasted into the app's "Add download" dialog.
         -->
         <activity
             android:name=".ui.DownloadRequestActivity"

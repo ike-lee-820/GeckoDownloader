@@ -16,22 +16,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -42,23 +41,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ikelee.geckodl.R
-import com.ikelee.geckodl.ui.browser.BrowserScreen
+import com.ikelee.geckodl.data.settings.AppSettings
+import com.ikelee.geckodl.data.settings.SettingsStore
+import com.ikelee.geckodl.download.DownloadService
 import com.ikelee.geckodl.ui.downloads.DownloadsScreen
 import com.ikelee.geckodl.ui.settings.SettingsScreen
 import com.ikelee.geckodl.ui.theme.GdlTheme
 import com.ikelee.geckodl.ui.update.UpdateDialog
 import com.ikelee.geckodl.update.UpdateManager
 import dagger.hilt.android.AndroidEntryPoint
-import com.ikelee.geckodl.download.DownloadService
-import com.ikelee.geckodl.data.settings.AppSettings
-import com.ikelee.geckodl.data.settings.SettingsStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 private const val ROUTE_DOWNLOADS = "downloads"
-private const val ROUTE_BROWSER = "browser"
 private const val ROUTE_SETTINGS = "settings"
 
 @AndroidEntryPoint
@@ -68,7 +65,7 @@ class MainActivity : ComponentActivity() {
 
     private val notifPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { /* result is read from the system settings if denied; no retry loop */ }
+    ) { /* 拒绝后由系统设置里自行开启，不反复弹窗 */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,7 +95,7 @@ fun AppRoot(updateManager: UpdateManager) {
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
 
-    // Quiet check on every cold start; the dialog only appears when a newer release exists.
+    // 冷启动静默检查更新，只有发现新版本才弹窗。
     LaunchedEffect(Unit) { updateManager.checkOnStartupIfEnabled() }
 
     Scaffold(
@@ -106,7 +103,6 @@ fun AppRoot(updateManager: UpdateManager) {
             NavigationBar {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     BottomItem(nav, current, ROUTE_DOWNLOADS, R.string.tab_downloads, Icons.Outlined.Download)
-                    BottomItem(nav, current, ROUTE_BROWSER, R.string.tab_browser, Icons.Outlined.Language)
                     BottomItem(nav, current, ROUTE_SETTINGS, R.string.tab_settings, Icons.Outlined.Settings)
                 }
             }
@@ -118,11 +114,10 @@ fun AppRoot(updateManager: UpdateManager) {
             modifier = Modifier.fillMaxSize().padding(inner)
         ) {
             composable(ROUTE_DOWNLOADS) { DownloadsScreen() }
-            composable(ROUTE_BROWSER) { BrowserScreen() }
             composable(ROUTE_SETTINGS) { SettingsScreen(updateManager = updateManager) }
         }
     }
-    // Dialog lives outside the Scaffold so it is shared by every tab.
+    // 更新弹窗放在 Scaffold 外，两个页面共用。
     UpdateDialog(manager = updateManager)
 }
 

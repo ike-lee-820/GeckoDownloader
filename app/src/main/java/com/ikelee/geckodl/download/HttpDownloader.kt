@@ -94,7 +94,7 @@ class HttpDownloader(
 
         call.execute().use { resp ->
             if (resp.code != 206) throw IOException("Server ignored range (HTTP ${resp.code})")
-            val body = resp.body ?: throw IOException("Empty body")
+            val body = resp.body ?: throw IOException("响应内容为空")
             body.byteStream().use { input ->
                 val buf = ByteArray(64 * 1024)
                 var pos = from

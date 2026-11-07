@@ -39,24 +39,3 @@ interface ChunkDao {
     @Query("DELETE FROM chunks WHERE taskId = :taskId")
     suspend fun clear(taskId: Long)
 }
-
-@Dao
-interface BrowserDao {
-    @Query("SELECT * FROM history ORDER BY visitedAt DESC LIMIT 200")
-    fun observeHistory(): Flow<List<HistoryEntity>>
-
-    @Insert
-    suspend fun addHistory(entity: HistoryEntity)
-
-    @Query("DELETE FROM history")
-    suspend fun clearHistory()
-
-    @Query("SELECT * FROM bookmarks ORDER BY createdAt DESC")
-    fun observeBookmarks(): Flow<List<BookmarkEntity>>
-
-    @Insert
-    suspend fun addBookmark(entity: BookmarkEntity)
-
-    @Query("DELETE FROM bookmarks WHERE id = :id")
-    suspend fun deleteBookmark(id: Long)
-}

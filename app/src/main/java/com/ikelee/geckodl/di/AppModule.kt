@@ -3,7 +3,6 @@ package com.ikelee.geckodl.di
 import android.content.Context
 import androidx.room.Room
 import com.ikelee.geckodl.data.db.AppDatabase
-import com.ikelee.geckodl.data.db.BrowserDao
 import com.ikelee.geckodl.data.db.ChunkDao
 import com.ikelee.geckodl.data.db.DownloadDao
 import dagger.Module
@@ -32,9 +31,6 @@ object AppModule {
 
     @Provides
     fun provideChunkDao(db: AppDatabase): ChunkDao = db.chunkDao()
-
-    @Provides
-    fun provideBrowserDao(db: AppDatabase): BrowserDao = db.browserDao()
 
     /**
      * One shared client for the download engine. Redirects are followed, and there is no

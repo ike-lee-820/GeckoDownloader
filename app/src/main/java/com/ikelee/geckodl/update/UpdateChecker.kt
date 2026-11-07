@@ -29,9 +29,9 @@ class UpdateChecker @Inject constructor(private val http: OkHttpClient) {
 
         client.newCall(request).execute().use { resp ->
             if (resp.code == 404) return@withContext null
-            if (!resp.isSuccessful) throw IOException("GitHub API returned HTTP ${resp.code}")
+            if (!resp.isSuccessful) throw IOException("GitHub 接口返回 HTTP ${resp.code}")
             val json = resp.body?.string().orEmpty()
-            if (json.isBlank()) throw IOException("Empty response from GitHub API")
+            if (json.isBlank()) throw IOException("GitHub 接口返回内容为空")
             parse(json)
         }
     }

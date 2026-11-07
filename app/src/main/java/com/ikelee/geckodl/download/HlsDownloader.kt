@@ -48,14 +48,14 @@ class HlsDownloader(
         val media = when (playlist) {
             is HlsPlaylist.Master -> {
                 val best = playlist.variants.firstOrNull()
-                    ?: throw IOException("Master playlist has no variants")
+                    ?: throw IOException("主播放列表没有可用清晰度")
                 val text = fetchText(best.uri, spec)
                 HlsParser.parse(text, best.uri) as? HlsPlaylist.Media
-                    ?: throw IOException("Variant is not a media playlist")
+                    ?: throw IOException("该清晰度不是媒体播放列表")
             }
             is HlsPlaylist.Media -> playlist
         }
-        if (media.segments.isEmpty()) throw IOException("No segments in playlist")
+        if (media.segments.isEmpty()) throw IOException("播放列表中没有分片")
 
         val cacheDir = File(context.cacheDir, "hls/$taskId").apply { mkdirs() }
         val total = media.segments.size
@@ -108,7 +108,7 @@ class HlsDownloader(
         val req = spec.apply(Request.Builder().url(url)).build()
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) throw IOException("HTTP ${resp.code} for playlist")
-            resp.body?.string() ?: throw IOException("Empty playlist")
+            resp.body?.string() ?: throw IOException("播放列表为空")
         }
     }
 
@@ -148,7 +148,7 @@ class HlsDownloader(
             try {
                 val raw = fetchBytes(seg.uri, spec)
                 val data = if (seg.key != null && seg.key.method == "AES-128") {
-                    val keyUri = seg.key.uri ?: throw IOException("AES key URI missing")
+                    val keyUri = seg.key.uri ?: throw IOException("缺少 AES 密钥地址")
                     val key = keyCache.getOrPut(keyUri) { fetchBytes(keyUri, spec) }
                     decryptAes128(raw, key, seg.key.iv ?: sequenceIv(seg.sequence))
                 } else raw

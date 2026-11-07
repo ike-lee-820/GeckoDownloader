@@ -57,7 +57,7 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
                     rangeSupported = true
                 )
                 200 -> ProbeInfo(resp.body?.contentLength() ?: -1L, false)
-                else -> throw IOException("HTTP ${resp.code} while probing update")
+                else -> throw IOException("探测更新地址失败：HTTP ${resp.code}")
             }
         }
     }
@@ -82,7 +82,7 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
                 // Keep probing the other endpoint; errors are collected below.
             }
         }
-        if (probed.isEmpty()) throw IOException("Both the v6.github.com proxy and github.com are unreachable")
+        if (probed.isEmpty()) throw IOException("代理与直连地址均不可用")
 
         // Stable sort: Range-capable endpoints first, proxy keeps priority among equals.
         val ordered = probed.sortedByDescending { it.second.rangeSupported && it.second.totalBytes > 0L }
@@ -107,7 +107,7 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
                 dest.delete()
             }
         }
-        throw lastError ?: IOException("Update download failed")
+        throw lastError ?: IOException("更新包下载失败")
     }
 
     private suspend fun ranged(
@@ -157,9 +157,9 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
 
         call.execute().use { resp ->
             if (resp.code != 206) {
-                throw IOException("Server ignored Range (HTTP ${resp.code}); falling back to another endpoint")
+                throw IOException("服务端不支持分段（HTTP ${resp.code}），正在换地址重试")
             }
-            val body = resp.body ?: throw IOException("Empty response body")
+            val body = resp.body ?: throw IOException("响应内容为空")
             body.byteStream().use { input ->
                 val buf = ByteArray(BUFFER)
                 var pos = start
@@ -167,19 +167,19 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
                     currentCoroutineContext().ensureActive()
                     val n = input.read(buf)
                     if (n <= 0) break
-                    if (pos + n - 1 > end) throw IOException("Range response exceeded requested bytes")
+                    if (pos + n - 1 > end) throw IOException("分段响应超出请求范围")
 
                     val bb = ByteBuffer.wrap(buf, 0, n)
                     var written = 0
                     while (bb.hasRemaining()) {
                         val w = channel.write(bb, pos + written)
-                        if (w <= 0) throw IOException("Failed writing APK chunk")
+                        if (w <= 0) throw IOException("写入 APK 分块失败")
                         written += w
                     }
                     pos += written
                     onProgress(done.addAndGet(written.toLong()), total, threads)
                 }
-                if (pos <= end) throw IOException("Incomplete range: ${end - pos + 1} bytes missing")
+                if (pos <= end) throw IOException("分段数据不完整：缺少 ${end - pos + 1} 字节")
             }
         }
     }
@@ -193,8 +193,8 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
         val call = http.newCall(request(url))
         currentCoroutineContext().job.invokeOnCompletion { call.cancel() }
         call.execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException("HTTP ${resp.code} while downloading update")
-            val body = resp.body ?: throw IOException("Empty response body")
+            if (!resp.isSuccessful) throw IOException("下载更新包失败：HTTP ${resp.code}")
+            val body = resp.body ?: throw IOException("响应内容为空")
             var done = 0L
             body.byteStream().use { input ->
                 FileOutputStream(dest).use { out ->
@@ -224,13 +224,15 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
     }
 
     private fun verify(file: File, expected: Long) {
-        if (!file.exists() || file.length() < 1024L) throw IOException("Downloaded file is too small to be an APK")
+        if (!file.exists() || file.length() < 1024L) {
+            throw IOException("下载文件过小，不是有效 APK")
+        }
         if (expected > 0L && file.length() != expected) {
-            throw IOException("Size mismatch: expected $expected, got ${file.length()}")
+            throw IOException("文件大小不符：应为 $expected，实际 ${file.length()}")
         }
         ZipFile(file).use { zip ->
             if (zip.getEntry("AndroidManifest.xml") == null) {
-                throw IOException("Download is not a valid APK (proxy returned a web page?)")
+                throw IOException("下载内容不是有效 APK（代理可能返回了网页）")
             }
         }
     }

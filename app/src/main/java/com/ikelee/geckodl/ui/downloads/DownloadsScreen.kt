@@ -170,14 +170,24 @@ private fun DownloadCard(
                     progress = { item.segmentsDone.toFloat() / item.segmentsTotal },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text("Segments ${item.segmentsDone}/${item.segmentsTotal}")
+                Text(stringResource(R.string.downloads_segments, item.segmentsDone, item.segmentsTotal))
             } else {
                 LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
-                Text("${formatBytes(item.downloadedBytes)} / ${if (item.totalBytes > 0) formatBytes(item.totalBytes) else "?"}  ${formatBytes(speed)}/s")
+                val totalText = if (item.totalBytes > 0) formatBytes(item.totalBytes)
+                else stringResource(R.string.downloads_unknown_size)
+                Text("${formatBytes(item.downloadedBytes)} / $totalText  " +
+                    stringResource(R.string.downloads_speed, formatBytes(speed)))
+            }
+            val statusLabel = when (item.status) {
+                DownloadStatus.QUEUED -> stringResource(R.string.status_queued)
+                DownloadStatus.RUNNING -> stringResource(R.string.status_running)
+                DownloadStatus.PAUSED -> stringResource(R.string.status_paused)
+                DownloadStatus.COMPLETED -> stringResource(R.string.status_completed)
+                DownloadStatus.FAILED -> stringResource(R.string.status_failed)
+                DownloadStatus.CANCELED -> stringResource(R.string.status_canceled)
             }
             Text(
-                text = item.status.name.lowercase().replaceFirstChar { it.uppercase() } +
-                    (item.error?.let { " - $it" } ?: ""),
+                text = statusLabel + (item.error?.let { " - $it" } ?: ""),
                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

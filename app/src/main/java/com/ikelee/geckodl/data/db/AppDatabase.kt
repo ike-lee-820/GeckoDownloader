@@ -6,9 +6,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [
         DownloadEntity::class,
-        ChunkEntity::class,
-        HistoryEntity::class,
-        BookmarkEntity::class
+        ChunkEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -16,5 +14,4 @@ import androidx.room.RoomDatabase
 abstract class AppDatabase : RoomDatabase() {
     abstract fun downloadDao(): DownloadDao
     abstract fun chunkDao(): ChunkDao
-    abstract fun browserDao(): BrowserDao
 }

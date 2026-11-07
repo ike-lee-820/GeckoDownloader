@@ -76,7 +76,10 @@ class DownloadService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_SERVICE)
             .setSmallIcon(R.drawable.ic_app)
             .setContentTitle(getString(R.string.notif_service_title))
-            .setContentText(if (active == 0) "Waiting" else "$active active")
+            .setContentText(
+                if (active == 0) getString(R.string.notif_waiting)
+                else getString(R.string.notif_active, active)
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(open)

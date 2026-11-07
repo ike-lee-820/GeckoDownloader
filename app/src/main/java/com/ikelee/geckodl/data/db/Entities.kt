@@ -40,19 +40,3 @@ data class ChunkEntity(
     val done: Long,
     val finished: Boolean
 )
-
-@Entity(tableName = "history")
-data class HistoryEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val url: String,
-    val title: String,
-    val visitedAt: Long = System.currentTimeMillis()
-)
-
-@Entity(tableName = "bookmarks")
-data class BookmarkEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val url: String,
-    val title: String,
-    val createdAt: Long = System.currentTimeMillis()
-)

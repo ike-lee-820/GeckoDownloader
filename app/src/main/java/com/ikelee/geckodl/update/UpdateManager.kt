@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.SystemClock
 import androidx.core.content.FileProvider
 import com.ikelee.geckodl.BuildConfig
+import com.ikelee.geckodl.R
 import com.ikelee.geckodl.data.settings.SettingsStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -67,12 +68,12 @@ class UpdateManager @Inject constructor(
             try {
                 val info = checker.latest()
                 if (info == null) {
-                    if (manual) toast("No published releases yet")
+                    if (manual) toast(context.getString(R.string.toast_no_release))
                     _state.value = UpdateUiState.Idle
                     return@launch
                 }
                 if (!isNewerVersion(info.tag, currentVersion)) {
-                    if (manual) toast("You're up to date (v$currentVersion)")
+                    if (manual) toast(context.getString(R.string.toast_up_to_date, currentVersion))
                     _state.value = UpdateUiState.Idle
                     return@launch
                 }
@@ -80,7 +81,10 @@ class UpdateManager @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                if (manual) toast("Update check failed: ${e.message ?: "network error"}")
+                if (manual) toast(context.getString(
+                    R.string.toast_check_failed,
+                    e.message ?: context.getString(R.string.error_network)
+                ))
                 _state.value = UpdateUiState.Idle
             }
         }
@@ -117,7 +121,7 @@ class UpdateManager @Inject constructor(
                 // cancelDownload() already reset the state.
             } catch (e: Exception) {
                 _state.value = UpdateUiState.Failed(
-                    e.message ?: "Download failed", release
+                    e.message ?: context.getString(R.string.error_download), release
                 )
             }
         }
@@ -146,9 +150,11 @@ class UpdateManager @Inject constructor(
         try {
             context.startActivity(intent)
             _state.value = UpdateUiState.Idle
-            toast("Opening in browser")
+            toast(context.getString(R.string.toast_opening_browser))
         } catch (e: ActivityNotFoundException) {
-            _state.value = UpdateUiState.Failed("No browser app installed", release)
+            _state.value = UpdateUiState.Failed(
+                context.getString(R.string.error_no_browser), release
+            )
         }
     }
 
@@ -165,7 +171,9 @@ class UpdateManager @Inject constructor(
             context.startActivity(intent)
             _state.value = UpdateUiState.Idle
         } catch (e: ActivityNotFoundException) {
-            _state.value = UpdateUiState.Failed("No app can install APK files", null)
+            _state.value = UpdateUiState.Failed(
+                context.getString(R.string.error_no_installer), null
+            )
         }
     }
 

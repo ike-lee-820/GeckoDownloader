@@ -12,12 +12,7 @@ plugins {
 val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("26.11.0")
 val appVersionCode: Int = providers.gradleProperty("appVersionCode").map { it.toInt() }.getOrElse(2611000)
 
-// GeckoView stable channel artifact is "org.mozilla.geckoview:geckoview" (the earlier
-// "geckoview-release" coordinate does not exist on maven.mozilla.org). The pinned version
-// in libs.versions.toml is a verified published build; CI can override it with
-// -PgeckoviewVersion without touching this file.
-val geckoviewVersion: String = providers.gradleProperty("geckoviewVersion")
-    .getOrElse(libs.versions.geckoview.get())
+// 纯下载器：不依赖 GeckoView / WebView，不内置浏览器引擎。
 
 android {
     namespace = "com.ikelee.geckodl"
@@ -37,9 +32,8 @@ android {
         buildConfigField("String", "APP_VERSION", "\"$appVersionName\"")
         buildConfigField("int", "APP_VERSION_CODE", "$appVersionCode")
 
-        // Ship arm64-v8a (ARMv8-A 64-bit) only. GeckoView's AAR contains all ABIs;
-        // abiFilters strips the others from the packaged APK. The release workflow
-        // additionally inspects lib/<abi>/ and fails if any other ABI leaked in.
+        // 只发 arm64-v8a (ARMv8-A 64-bit) 单架构包。纯下载器已移除 GeckoView，
+        // APK 内不含 .so；release workflow 仍会检查 lib/ 目录防止其它架构混入。
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
@@ -101,8 +95,4 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime.ktx)
     implementation("androidx.documentfile:documentfile:1.0.1")
-
-    // GeckoView release channel, resolved from maven.mozilla.org (see settings.gradle.kts).
-    // Version is overridden in CI by -PgeckoviewVersion; local builds use the catalog value.
-    implementation("org.mozilla.geckoview:geckoview:$geckoviewVersion")
 }

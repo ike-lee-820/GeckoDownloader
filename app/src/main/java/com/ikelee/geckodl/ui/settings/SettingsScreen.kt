@@ -1,5 +1,6 @@
 package com.ikelee.geckodl.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,12 +44,7 @@ class SettingsViewModel @Inject constructor(
     fun setThreads(v: Int) = viewModelScope.launch { store.setThreads(v) }
     fun setMaxTasks(v: Int) = viewModelScope.launch { store.setMaxTasks(v) }
     fun setRetry(v: Int) = viewModelScope.launch { store.setRetry(v) }
-    fun setGlobalLimit(v: Int) = viewModelScope.launch { store.setGlobalLimit(v) }
     fun setWifiOnly(v: Boolean) = viewModelScope.launch { store.setWifiOnly(v) }
-    fun setSniff(v: Boolean) = viewModelScope.launch { store.setSniffEnabled(v) }
-    fun setDesktop(v: Boolean) = viewModelScope.launch { store.setDesktopUa(v) }
-    fun setJs(v: Boolean) = viewModelScope.launch { store.setJavaScript(v) }
-    fun setIncognito(v: Boolean) = viewModelScope.launch { store.setIncognitoDefault(v) }
     fun setDynamic(v: Boolean) = viewModelScope.launch { store.setDynamicColor(v) }
     fun setDark(v: String) = viewModelScope.launch { store.setDarkMode(v) }
     fun setAutoCheck(v: Boolean) = viewModelScope.launch { store.setAutoCheckUpdate(v) }
@@ -62,7 +58,7 @@ fun SettingsScreen(
     val s by vm.settings.collectAsState()
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Section(stringResource(R.string.settings_download)) {
             SliderRow(stringResource(R.string.settings_threads), s.threadsPerTask, 1f..32f) { vm.setThreads(it) }
@@ -72,25 +68,28 @@ fun SettingsScreen(
         Section(stringResource(R.string.settings_network)) {
             SwitchRow(stringResource(R.string.settings_wifi_only), s.wifiOnly) { vm.setWifiOnly(it) }
         }
-        Section(stringResource(R.string.settings_browser)) {
-            SwitchRow("Desktop site", s.desktopUa) { vm.setDesktop(it) }
-            SwitchRow("JavaScript", s.javaScriptEnabled) { vm.setJs(it) }
-            SwitchRow(stringResource(R.string.settings_sniff), s.sniffEnabled) { vm.setSniff(it) }
-            SwitchRow("Private browsing by default", s.incognitoDefault) { vm.setIncognito(it) }
-        }
         Section(stringResource(R.string.settings_appearance)) {
             SwitchRow(stringResource(R.string.settings_dynamic_color), s.dynamicColor) { vm.setDynamic(it) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Dark mode: ${s.darkMode}")
+            val modeLabel = when (s.darkMode) {
+                "light" -> stringResource(R.string.theme_light)
+                "dark" -> stringResource(R.string.theme_dark)
+                else -> stringResource(R.string.theme_system)
             }
-            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                listOf("system", "light", "dark").forEach { mode ->
-                    androidx.compose.material3.FilledTonalButton(onClick = { vm.setDark(mode) }) { Text(mode) }
+            Text(stringResource(R.string.settings_theme_mode, modeLabel))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    "system" to R.string.theme_system,
+                    "light" to R.string.theme_light,
+                    "dark" to R.string.theme_dark
+                ).forEach { (mode, label) ->
+                    FilledTonalButton(onClick = { vm.setDark(mode) }) {
+                        Text(stringResource(label))
+                    }
                 }
             }
         }
         Section(stringResource(R.string.settings_about)) {
-            Text("${stringResource(R.string.settings_version)}: ${BuildConfig.APP_VERSION}")
+            Text("${stringResource(R.string.settings_version)}：${BuildConfig.APP_VERSION}")
             Text(
                 stringResource(R.string.settings_update_proxy),
                 style = MaterialTheme.typography.bodySmall
@@ -112,7 +111,7 @@ fun SettingsScreen(
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
@@ -130,7 +129,7 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
 @Composable
 private fun SliderRow(label: String, value: Int, range: ClosedFloatingPointRange<Float>, onChange: (Int) -> Unit) {
     Column {
-        Text("$label: $value")
+        Text("$label：$value")
         Slider(
             value = value.toFloat(),
             onValueChange = { onChange(it.toInt()) },
