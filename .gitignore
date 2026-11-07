@@ -10,3 +10,5 @@
 .cxx/
 *.keystore
 *.jks
+# This repo intentionally ships its fixed signing keystore (owner's decision).
+!signing/ikelee-release.jks

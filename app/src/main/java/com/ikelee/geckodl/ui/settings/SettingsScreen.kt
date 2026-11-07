@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -22,9 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ikelee.geckodl.BuildConfig
 import com.ikelee.geckodl.R
 import com.ikelee.geckodl.data.settings.AppSettings
 import com.ikelee.geckodl.data.settings.SettingsStore
+import com.ikelee.geckodl.update.UpdateManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -48,10 +51,14 @@ class SettingsViewModel @Inject constructor(
     fun setIncognito(v: Boolean) = viewModelScope.launch { store.setIncognitoDefault(v) }
     fun setDynamic(v: Boolean) = viewModelScope.launch { store.setDynamicColor(v) }
     fun setDark(v: String) = viewModelScope.launch { store.setDarkMode(v) }
+    fun setAutoCheck(v: Boolean) = viewModelScope.launch { store.setAutoCheckUpdate(v) }
 }
 
 @Composable
-fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    updateManager: UpdateManager,
+    vm: SettingsViewModel = hiltViewModel()
+) {
     val s by vm.settings.collectAsState()
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -83,7 +90,21 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
             }
         }
         Section(stringResource(R.string.settings_about)) {
-            Text("${stringResource(R.string.settings_version)}: 0.1.0")
+            Text("${stringResource(R.string.settings_version)}: ${BuildConfig.APP_VERSION}")
+            Text(
+                stringResource(R.string.settings_update_proxy),
+                style = MaterialTheme.typography.bodySmall
+            )
+            SwitchRow(
+                stringResource(R.string.settings_auto_check_update),
+                s.autoCheckUpdate
+            ) { vm.setAutoCheck(it) }
+            FilledTonalButton(
+                onClick = { updateManager.checkForUpdate(manual = true) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.settings_check_update))
+            }
         }
     }
 }

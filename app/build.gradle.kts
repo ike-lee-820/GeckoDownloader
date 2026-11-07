@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Version is injected by .github/workflows/release.yml via
+// -PappVersionName / -PappVersionCode so the APK matches the GitHub Release tag.
+// Local builds default to 26.11.0 (YY.MM.当月序号), versionCode 2611000.
+val appVersionName: String = providers.gradleProperty("appVersionName").getOrElse("26.11.0")
+val appVersionCode: Int = providers.gradleProperty("appVersionCode").map { it.toInt() }.getOrElse(2611000)
+
 android {
     namespace = "com.ikelee.geckodl"
     compileSdk = 34
@@ -14,13 +20,19 @@ android {
         applicationId = "com.ikelee.geckodl"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
-        // Keep only the ABIs we ship. GeckoView's native libs for other ABIs are dropped
-        // from the packaged APK, which is the main lever on package size.
+        // AGP 8 no longer generates BuildConfig.VERSION_NAME / VERSION_CODE automatically.
+        // Custom names keep the in-app updater independent of PackageManager differences.
+        buildConfigField("String", "APP_VERSION", "\"$appVersionName\"")
+        buildConfigField("int", "APP_VERSION_CODE", "$appVersionCode")
+
+        // Ship arm64-v8a (ARMv8-A 64-bit) only. GeckoView's AAR contains all ABIs;
+        // abiFilters strips the others from the packaged APK. The release workflow
+        // additionally inspects lib/<abi>/ and fails if any other ABI leaked in.
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("arm64-v8a")
         }
     }
 

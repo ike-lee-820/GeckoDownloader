@@ -5,7 +5,11 @@ Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, OkHttp, minSdk 26, t
 
 ## Build
 
+This repository does not ship a Gradle Wrapper. AGP 8.5.2 requires Gradle 8.7+, so install
+Gradle 8.7 locally (or generate a wrapper once):
+
 ```
+gradle wrapper --gradle-version 8.7 --distribution-type bin
 ./gradlew :app:assembleDebug
 ```
 
@@ -14,9 +18,68 @@ GeckoView is pinned in `gradle/libs.versions.toml` to `159.0.20261102144711` fro
 by the project owner. It was not resolved by the author because the build environment blocks
 maven.mozilla.org. Resolve it once before the first build.
 
-Release builds enable R8 and resource shrinking. `abiFilters` keeps only `arm64-v8a` and
-`armeabi-v7a`. The `geckoview-release` AAR contains all ABIs, and `abiFilters` strips the others
-from the packaged APK.
+Release builds enable R8 and resource shrinking. `abiFilters` keeps **only `arm64-v8a`**
+(ARMv8-A 64-bit). The `geckoview-release` AAR contains all ABIs, and `abiFilters` strips the
+others from the packaged APK. `versionName` / `versionCode` default to `26.11.0` / `2611000`
+and can be overridden with `-PappVersionName=... -PappVersionCode=...`.
+
+## Release (GitHub Actions)
+
+`.github/workflows/release.yml` builds a signed release APK and publishes it as a GitHub Release.
+
+- **Triggers**: push to `release*` / `release/**` branches, push of a `release*` tag, or a manual
+  `workflow_dispatch` run (optionally with an explicit `version` input).
+- **Version**: `YY.MM.N` — two-digit year, month, and the release index within that month
+  (Asia/Shanghai). The first release in November 2026 is `26.11.0`, the next `26.11.1`, and so on.
+  A `release*` tag containing `YY.MM.N` reuses that number. Existing tags are never overwritten.
+- **Artifacts**: `GeckoDownloader-<version>-arm64-v8a.apk` plus `SHA256SUMS`, attached to the
+  Release whose tag and title are the version. The workflow verifies that no ABI other than
+  `arm64-v8a` is packaged.
+- **Signing**: zero configuration. `signing/ikelee-release.jks` (alias `ikelee`, store/key
+  password `liyikui917`) ships with the repository, so every build uses the same key and
+  in-app upgrades install cleanly. The workflow never falls back to a throwaway keystore.
+  Each Release's notes include the signing certificate SHA-256 fingerprint — it stays the same
+  across versions.
+
+  Because the keystore and its password are public, anyone can produce an APK signed with this
+  key. That is an accepted trade-off here: the key exists only to keep upgrades installable,
+  not to prove authorship. Do not reuse it for anything that needs trust.
+
+  Optional overrides (Settings → Secrets and variables → Actions): `SIGNING_KEYSTORE_BASE64`
+  + `SIGNING_KEYSTORE_PASSWORD` replace the in-repo keystore; `SIGNING_KEY_ALIAS` (default
+  `ikelee`) and `SIGNING_KEY_PASSWORD` (default = store password) fine-tune it. Rotating the
+  key means existing users must uninstall the old build first.
+- **Token**: the workflow uses the built-in `GITHUB_TOKEN` with `contents: write`. No personal
+  access token is required. Never put a PAT in a workflow file or in source.
+- **First run**: this source tree has not been compiled yet (see Status below). The first workflow
+  run may fail at Kotlin/R8/GeckoView resolution; fix those errors from the build log. Also make
+  sure the runner can reach `maven.mozilla.org`, which hosts the GeckoView AAR.
+
+## In-app updates
+
+The app checks GitHub Releases on every cold start (toggle in Settings → About) and can also be
+checked manually from Settings.
+
+- **Metadata**: `GET https://api.github.com/repos/ike-lee-820/GeckoDownloader/releases/latest`.
+  This is a public endpoint: no token, no credentials stored in the app. The `arm64-v8a` APK
+  asset is preferred.
+- **Version**: `YY.MM.N` is compared numerically against `BuildConfig.APP_VERSION`.
+- **Choices**: when a newer release exists the dialog offers **In-app update**,
+  **Open in browser**, or **Cancel**.
+- **In-app update**: 32 parallel ranged requests (`ApkDownloader`) with live progress
+  (bytes / total / percent / active threads), then the package installer is launched through
+  `FileProvider` (`REQUEST_INSTALL_PACKAGES`).
+- **Open in browser**: an `ACTION_VIEW` / `CATEGORY_BROWSABLE` intent handed to the system
+  default browser.
+- **v6.github.com proxy**: every release page and APK download URL is rewritten to
+  `v6.github.com` by `UpdateConfig.proxy`. If the proxy ignores `Range`, fails, or returns an
+  HTML page instead of an APK, the downloader retries the original `github.com` URL and
+  validates the result (size + ZIP containing `AndroidManifest.xml`) before offering install.
+
+**Signing note**: in-app installation only works when the new APK has the same signature as the
+installed one. The fixed keystore is committed in `signing/`, so the workflow always signs with
+the same key and prints the certificate SHA-256 in every Release. If you ever rotate the
+keystore, users must uninstall the old build first.
 
 ## Status
 

@@ -42,6 +42,8 @@ data class AppSettings(
     val dynamicColor: Boolean = true,
     val themeColorSeed: Long = 0xFF1B5E20,
     val darkMode: String = "system",       // system | light | dark
+    // Updates
+    val autoCheckUpdate: Boolean = true,
     // Privacy
     val logReportingEnabled: Boolean = false
 )
@@ -73,6 +75,7 @@ class SettingsStore @Inject constructor(
         val dynamic = booleanPreferencesKey("dynamic_color")
         val seed = longPreferencesKey("theme_seed")
         val darkMode = stringPreferencesKey("dark_mode")
+        val autoCheck = booleanPreferencesKey("auto_check_update")
         val logs = booleanPreferencesKey("log_reporting")
     }
 
@@ -99,6 +102,7 @@ class SettingsStore @Inject constructor(
             dynamicColor = p[Keys.dynamic] ?: d.dynamicColor,
             themeColorSeed = p[Keys.seed] ?: d.themeColorSeed,
             darkMode = p[Keys.darkMode] ?: d.darkMode,
+            autoCheckUpdate = p[Keys.autoCheck] ?: d.autoCheckUpdate,
             logReportingEnabled = p[Keys.logs] ?: d.logReportingEnabled
         )
     }
@@ -119,6 +123,7 @@ class SettingsStore @Inject constructor(
     suspend fun setIncognitoDefault(value: Boolean) = ds.edit { it[Keys.incognito] = value }
     suspend fun setDynamicColor(value: Boolean) = ds.edit { it[Keys.dynamic] = value }
     suspend fun setDarkMode(value: String) = ds.edit { it[Keys.darkMode] = value }
+    suspend fun setAutoCheckUpdate(value: Boolean) = ds.edit { it[Keys.autoCheck] = value }
     suspend fun setUaPreset(value: String) = ds.edit { it[Keys.uaPreset] = value }
     suspend fun setCustomUa(value: String) = ds.edit { it[Keys.customUa] = value }
     suspend fun setLogReporting(value: Boolean) = ds.edit { it[Keys.logs] = value }

@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -27,7 +28,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.compose.runtime.getValue
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -38,6 +38,8 @@ import com.ikelee.geckodl.ui.browser.BrowserScreen
 import com.ikelee.geckodl.ui.downloads.DownloadsScreen
 import com.ikelee.geckodl.ui.settings.SettingsScreen
 import com.ikelee.geckodl.ui.theme.GdlTheme
+import com.ikelee.geckodl.ui.update.UpdateDialog
+import com.ikelee.geckodl.update.UpdateManager
 import dagger.hilt.android.AndroidEntryPoint
 import com.ikelee.geckodl.download.DownloadService
 import com.ikelee.geckodl.data.settings.AppSettings
@@ -54,6 +56,8 @@ private const val ROUTE_SETTINGS = "settings"
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject lateinit var updateManager: UpdateManager
+
     private val notifPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { /* result is read from the system settings if denied; no retry loop */ }
@@ -69,7 +73,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings = hiltViewModel<AppVm>().settings.collectAsState().value
             GdlTheme(dynamicColor = settings.dynamicColor, darkMode = settings.darkMode) {
-                AppRoot()
+                AppRoot(updateManager = updateManager)
             }
         }
     }
@@ -81,10 +85,13 @@ class AppVm @Inject constructor(store: SettingsStore) : ViewModel() {
 }
 
 @Composable
-fun AppRoot() {
+fun AppRoot(updateManager: UpdateManager) {
     val nav = rememberNavController()
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
+
+    // Quiet check on every cold start; the dialog only appears when a newer release exists.
+    LaunchedEffect(Unit) { updateManager.checkOnStartupIfEnabled() }
 
     Scaffold(
         bottomBar = {
@@ -102,9 +109,11 @@ fun AppRoot() {
         ) {
             composable(ROUTE_DOWNLOADS) { DownloadsScreen() }
             composable(ROUTE_BROWSER) { BrowserScreen() }
-            composable(ROUTE_SETTINGS) { SettingsScreen() }
+            composable(ROUTE_SETTINGS) { SettingsScreen(updateManager = updateManager) }
         }
     }
+    // Dialog lives outside the Scaffold so it is shared by every tab.
+    UpdateDialog(manager = updateManager)
 }
 
 @Composable

@@ -49,6 +49,24 @@
     <string name="settings_sniff">Resource sniffing</string>
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_version">Version</string>
+    <string name="settings_check_update">Check for updates</string>
+    <string name="settings_auto_check_update">Check on startup</string>
+    <string name="settings_update_proxy">Updates via v6.github.com proxy</string>
+
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_available">Update available</string>
+    <string name="update_version">%1$s → %2$s</string>
+    <string name="update_in_app">In-app update (32 threads)</string>
+    <string name="update_external">Open in browser</string>
+    <string name="update_cancel">Cancel</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_progress">%1$s / %2$s · %3$d%%</string>
+    <string name="update_threads">%1$d threads</string>
+    <string name="update_ready">Download complete</string>
+    <string name="update_install">Install now</string>
+    <string name="update_retry">Retry</string>
+    <string name="update_failed">Update failed</string>
+    <string name="update_proxy_hint">Proxy: v6.github.com (falls back to github.com)</string>
 
     <string name="notif_channel_service">Download service</string>
     <string name="notif_channel_result">Download results</string>
