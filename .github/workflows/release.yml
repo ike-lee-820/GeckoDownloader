@@ -96,15 +96,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # ubuntu-latest already ships an Android SDK; no third-party setup action needed
+      # (it failed on the very first run, and downloading cmdline-tools is unreliable).
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK root: ${SDK_ROOT}"
+          SDKMGR="$(command -v sdkmanager || true)"
+          if [[ -z "${SDKMGR}" ]]; then
+            SDKMGR="$(find "${SDK_ROOT}" -type f -name sdkmanager -path '*/bin/*' 2>/dev/null | head -n 1 || true)"
+          fi
+          if [[ -z "${SDKMGR}" || ! -x "${SDKMGR}" ]]; then
+            echo "::error::找不到 sdkmanager，请检查 runner 的 Android SDK"
+            exit 1
+          fi
+          echo "sdkmanager: ${SDKMGR}"
+          echo "ANDROID_HOME=${SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "$(dirname "${SDKMGR}")" >> "$GITHUB_PATH"
+          yes | "${SDKMGR}" --licenses > /dev/null 2>&1 || true
+          "${SDKMGR}" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null
+          "${SDKMGR}" --list_installed | grep -E 'platforms;android-34|build-tools;34.0.0' || true
 
       - name: Install Gradle 8.7
         shell: bash
