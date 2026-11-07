@@ -309,9 +309,10 @@ jobs:
               fi
             fi
             echo "- 校验：下载 \`GeckoDownloader-${VERSION}-arm64-v8a.apk\` 后对照 \`SHA256SUMS\`。"
-            echo "- 加速下载（v6.gh-proxy.com 代理，应用内更新默认走这条）："
+            echo "- 加速下载直链（打开即下载，应用内/外更新都用文件直链，不代理 Release 网页）："
             echo "  \`https://v6.gh-proxy.com/github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}/GeckoDownloader-${VERSION}-arm64-v8a.apk\`"
-            echo "- 代理不支持分段或不可用时，应用会自动回退 \`github.com\` 直连。"
+            echo "- 备用节点：把上面的 \`v6.gh-proxy.com\` 换成 \`v6.gh-proxy.org\`；两节点都不可用会自动回退 \`github.com\` 直连。"
+            echo "- 注意：gh-proxy 只加速文件直链，\`/releases/tag/\` 这类网页请用 \`github.com\` 原站打开。"
           } > release_notes.md
 
           gh release create "${VERSION}" release/* \

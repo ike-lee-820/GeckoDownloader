@@ -139,23 +139,38 @@ class UpdateManager @Inject constructor(
         else UpdateUiState.Idle
     }
 
-    /** "Open in browser": hands the proxied release page to the system default browser. */
+    /**
+     * "应用外更新"：交给系统默认浏览器的是一个 **APK 文件直链**，打开即开始下载。
+     *
+     * 以前这里跳的是 release.htmlUrl（/releases/tag/... 网页）再套代理前缀，
+     * 但 gh-proxy 只代理文件、不代理 GitHub 网页，浏览器会停在 GitHub 的
+     * "There was an error while loading" 页面上，根本到不了下载按钮。
+     * 现在先探测各加速节点，挑第一个真正返回文件的直链再跳转。
+     */
     fun openInBrowser(release: ReleaseInfo) {
-        val url = UpdateConfig.proxy(
-            release.htmlUrl.ifBlank { UpdateConfig.releasePage(release.tag) }
-        )
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-            addCategory(Intent.CATEGORY_BROWSABLE)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            context.startActivity(intent)
-            _state.value = UpdateUiState.Idle
-            toast(context.getString(R.string.toast_opening_browser))
-        } catch (e: ActivityNotFoundException) {
-            _state.value = UpdateUiState.Failed(
-                context.getString(R.string.error_no_browser), release
-            )
+        scope.launch {
+            val apkUrl = release.apkUrl.ifBlank {
+                UpdateConfig.apkDirectUrl(release.tag, release.apkName)
+            }
+            val targets = UpdateConfig.candidates(apkUrl)
+            val url = try {
+                downloader.firstWorking(targets)
+            } catch (e: Exception) {
+                UpdateConfig.direct(apkUrl)
+            }
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addCategory(Intent.CATEGORY_BROWSABLE)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            try {
+                context.startActivity(intent)
+                _state.value = UpdateUiState.Idle
+                toast(context.getString(R.string.toast_opening_browser))
+            } catch (e: ActivityNotFoundException) {
+                _state.value = UpdateUiState.Failed(
+                    context.getString(R.string.error_no_browser), release
+                )
+            }
         }
     }
 

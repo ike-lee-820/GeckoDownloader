@@ -43,17 +43,21 @@ gradle wrapper --gradle-version 8.7 --distribution-type bin
 ## 应用内更新
 
 - 元数据走公开 `https://api.github.com/repos/ike-lee-820/GeckoDownloader/releases/latest`，匿名无需 token，优先挑 `arm64-v8a` 的 APK。
-- **代理方式**：凡是用户要打开或下载的链接，统一改成前缀式代理
-  `https://github.com/xxx` → `https://v6.gh-proxy.com/github.com/xxx`。
-  例如：`https://v6.gh-proxy.com/github.com/ike-lee-820/GeckoDownloader/releases/download/26.11.0/GeckoDownloader-26.11.0-arm64-v8a.apk`
-  代理不支持 `Range`、连不上或返回网页时，自动回退 `github.com` 直连，并校验
-  文件大小 + ZIP 内含 `AndroidManifest.xml` 才允许安装。
-- **三选一**：应用内更新（32 并发分段，实时显示字节 / 总量 / 百分比 / 线程数，下完调系统安装器）／
-  应用外更新（`ACTION_VIEW` 交系统默认浏览器打开代理后的下载页）／取消。
+- **只代理文件直链**：gh-proxy 一类服务只加速
+  `https://github.com/{owner}/{repo}/releases/download/{tag}/{file}`，
+  **不代理 GitHub 网页**。把 `/releases/tag/{tag}` 套上代理前缀，浏览器只会停在
+  "There was an error while loading. Please reload this page."，到不了下载按钮。
+  因此应用内所有打开/下载动作一律指向 APK 直链：
+  `https://v6.gh-proxy.com/github.com/ike-lee-820/GeckoDownloader/releases/download/26.11.3/GeckoDownloader-26.11.3-arm64-v8a.apk`
+- **节点候选**：主节点 `v6.gh-proxy.com`，备用节点 `v6.gh-proxy.org`（官方国内 / IPv6 线路），
+  最后回退 `github.com` 直连。下载器逐个探测，挑真正返回文件而非 HTML 错误页的节点；
+  代理不支持 `Range` 时退化为单线程，并校验文件大小 + ZIP 内含 `AndroidManifest.xml` 才允许安装。
+- **三选一**：应用内更新（最多 128 并发分段，实时显示字节 / 总量 / 百分比 / 线程数，下完调系统安装器）／
+  应用外更新（先探测可用节点，再用 `ACTION_VIEW` 把 **APK 直链**交给系统默认浏览器，打开即下载）／取消。
 - 版本按 `YY.MM.N` 数字比较，与自动发版生成的 tag 一致。
 
 ## 状态
 
-`26.11.0` 起由 CI 自动构建发布。界面默认中文，代理切换为 `v6.gh-proxy.com`；
-本版把内置浏览器换成系统 WebView，单任务线程上限提到 128、并发任务上限提到 32，
-进度条刷新改为 50ms 一帧。
+`26.11.0` 起由 CI 自动构建发布。界面默认中文；内置浏览器改为系统 WebView；
+单任务线程上限 128、并发任务上限 32、进度 50ms 一帧；
+更新链接统一改为 APK 文件直链（不再跳代理后的 Release 网页），并加入 `.org` 备用节点自动择优。

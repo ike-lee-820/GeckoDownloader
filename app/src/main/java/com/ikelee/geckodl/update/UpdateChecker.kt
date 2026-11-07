@@ -71,7 +71,8 @@ class UpdateChecker @Inject constructor(private val http: OkHttpClient) {
             name = root.optString("name").ifBlank { tag },
             notes = root.optString("body"),
             publishedAt = root.optString("published_at"),
-            htmlUrl = root.optString("html_url").ifBlank { UpdateConfig.releasePage(tag) },
+            // 兜底也用文件直链：代理不代理 GitHub 网页，tag 页面在浏览器里会报加载错误。
+            htmlUrl = UpdateConfig.apkDirectUrl(tag, apkName),
             apkUrl = apkUrl,
             apkName = apkName,
             apkSize = apkSize

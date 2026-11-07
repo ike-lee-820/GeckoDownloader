@@ -9,6 +9,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -16,6 +17,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.zip.ZipFile
 import javax.inject.Inject
@@ -42,6 +44,11 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
 
     data class ProbeInfo(val totalBytes: Long, val rangeSupported: Boolean)
 
+    /** 探测用短超时：某个节点不通时不要让用户等 20 秒。 */
+    private val probeClient: OkHttpClient = http.newBuilder()
+        .callTimeout(8, TimeUnit.SECONDS)
+        .build()
+
     private fun request(url: String, range: String? = null): Request {
         val b = Request.Builder().url(url).header("User-Agent", UpdateConfig.USER_AGENT)
         if (range != null) b.header("Range", range)
@@ -49,7 +56,11 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
     }
 
     private fun probe(url: String): ProbeInfo {
-        http.newCall(request(url, "bytes=0-0")).execute().use { resp ->
+        probeClient.newCall(request(url, "bytes=0-0")).execute().use { resp ->
+            // 代理挂掉时常返回 GitHub/Cloudflare 的 HTML 错误页，必须在这里就排除。
+            if (resp.header("Content-Type").orEmpty().contains("text/html", ignoreCase = true)) {
+                throw IOException("加速节点返回了网页而非文件：$url")
+            }
             return when (resp.code) {
                 206 -> ProbeInfo(
                     totalBytes = resp.header("Content-Range")
@@ -63,7 +74,31 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
     }
 
     /**
-     * Tries the proxy then the direct URL. Calls [onProgress] with
+     * Picks the first endpoint that actually serves the file (not an HTML error page).
+     * Used before handing an APK URL to the system browser, so "应用外更新" opens a
+     * direct download instead of a broken proxied GitHub web page.
+     */
+    suspend fun firstWorking(urls: List<String>): String = withContext(Dispatchers.IO) {
+        for (url in urls.distinct()) {
+            try {
+                probeClient.newCall(request(url, "bytes=0-0")).execute().use { resp ->
+                    val type = resp.header("Content-Type").orEmpty()
+                    val isFile = !type.contains("text/html", ignoreCase = true)
+                    if (resp.code in 200..299 && isFile) return@withContext url
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Try the next node.
+            }
+        }
+        // All probes failed: fall back to the original github.com direct link.
+        urls.distinct().lastOrNull()?.let { UpdateConfig.direct(it) }
+            ?: throw IOException("没有可用的下载地址")
+    }
+
+    /**
+     * Tries every proxy node then the direct URL. Calls [onProgress] with
      * (bytes done, total bytes, active threads) from IO threads.
      */
     suspend fun downloadWithFallback(
