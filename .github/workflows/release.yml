@@ -164,8 +164,9 @@ jobs:
             echo "Automated arm64-v8a build failed: ${RUN_URL}"
             echo
             echo '```text'
-            echo '=== ALL COMPILER ERRORS ==='
-            grep -E '^e: ' "$LOG" 2>/dev/null | head -200 || true
+            echo '=== ALL ERRORS / R8 DIAGNOSTICS ==='
+            grep -E '^e: |^ERROR:|Missing class|Execution failed|^\* What went wrong|^Caused by:' \
+              "$LOG" 2>/dev/null | head -200 || true
             echo
             echo '=== LOG TAIL ==='
             tail -c 12000 "$LOG" 2>/dev/null || echo '(no build log captured)'
