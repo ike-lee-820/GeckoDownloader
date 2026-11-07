@@ -112,9 +112,17 @@ class BrowserViewModel @Inject constructor(
         }
     }
 
-    fun back() = tabs.session(tabs.activeId.value ?: return)?.goBack()
-    fun forward() = tabs.session(tabs.activeId.value ?: return)?.goForward()
-    fun reload() = tabs.session(tabs.activeId.value ?: return)?.reload()
+    fun back() {
+        tabs.session(tabs.activeId.value ?: return)?.goBack()
+    }
+
+    fun forward() {
+        tabs.session(tabs.activeId.value ?: return)?.goForward()
+    }
+
+    fun reload() {
+        tabs.session(tabs.activeId.value ?: return)?.reload()
+    }
 
     fun downloadSniffed(resource: SniffedResource) {
         viewModelScope.launch {

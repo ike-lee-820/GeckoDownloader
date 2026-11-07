@@ -164,7 +164,11 @@ jobs:
             echo "Automated arm64-v8a build failed: ${RUN_URL}"
             echo
             echo '```text'
-            tail -c 30000 "$LOG" 2>/dev/null || echo '(no build log captured)'
+            echo '=== ALL COMPILER ERRORS ==='
+            grep -E '^e: ' "$LOG" 2>/dev/null | head -200 || true
+            echo
+            echo '=== LOG TAIL ==='
+            tail -c 12000 "$LOG" 2>/dev/null || echo '(no build log captured)'
             echo
             echo '```'
           } > "$RUNNER_TEMP/issue.md"
