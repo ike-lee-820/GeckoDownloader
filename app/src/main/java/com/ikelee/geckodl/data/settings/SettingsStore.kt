@@ -82,8 +82,8 @@ class SettingsStore @Inject constructor(
     val settings: Flow<AppSettings> = ds.data.map { p ->
         val d = AppSettings()
         AppSettings(
-            threadsPerTask = (p[Keys.threads] ?: d.threadsPerTask).coerceIn(1, 32),
-            maxConcurrentTasks = (p[Keys.maxTasks] ?: d.maxConcurrentTasks).coerceIn(1, 8),
+            threadsPerTask = (p[Keys.threads] ?: d.threadsPerTask).coerceIn(1, 128),
+            maxConcurrentTasks = (p[Keys.maxTasks] ?: d.maxConcurrentTasks).coerceIn(1, 32),
             retryCount = (p[Keys.retry] ?: d.retryCount).coerceIn(0, 10),
             globalLimitKbps = p[Keys.globalLimit] ?: d.globalLimitKbps,
             fileNameTemplate = p[Keys.nameTemplate] ?: d.fileNameTemplate,
@@ -107,8 +107,8 @@ class SettingsStore @Inject constructor(
         )
     }
 
-    suspend fun setThreads(value: Int) = ds.edit { it[Keys.threads] = value.coerceIn(1, 32) }
-    suspend fun setMaxTasks(value: Int) = ds.edit { it[Keys.maxTasks] = value.coerceIn(1, 8) }
+    suspend fun setThreads(value: Int) = ds.edit { it[Keys.threads] = value.coerceIn(1, 128) }
+    suspend fun setMaxTasks(value: Int) = ds.edit { it[Keys.maxTasks] = value.coerceIn(1, 32) }
     suspend fun setRetry(value: Int) = ds.edit { it[Keys.retry] = value.coerceIn(0, 10) }
     suspend fun setGlobalLimit(value: Int) = ds.edit { it[Keys.globalLimit] = value.coerceAtLeast(0) }
     suspend fun setWifiOnly(value: Boolean) = ds.edit { it[Keys.wifiOnly] = value }

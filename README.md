@@ -1,14 +1,16 @@
 # Gecko 下载器（GeckoDownloader）
 
-一个 **纯下载器**：Android 平台、`arm64-v8a` 单架构、**界面默认中文**，不内置浏览器引擎（已移除 GeckoView / WebView 与网页嗅探）。
+Android `arm64-v8a` 单架构、**界面默认中文**的下载器，内置基于**系统 WebView** 的浏览器（已移除 GeckoView 引擎，安装包体积大幅减小）。
 
 ## 功能
 
-- HTTP / HTTPS 分块多线程下载、断点续传、失败重试、并发任务与速度显示
+- HTTP / HTTPS 分块多线程下载：**单任务最多 128 线程**、**最多 32 个并发任务**，断点续传、失败重试、实时进度与速度
+- 进度每 50ms 刷新一次，速度每 250ms 采样一次
 - HLS（`.m3u8`）分片下载
+- 内置系统 WebView 浏览器：地址栏、多标签、前进/后退/刷新、下载链接捕获、媒体资源嗅探
 - 通过分享、浏览器「打开方式」或应用内「添加下载」接收链接
 - 前台服务通知、开机恢复、SAF 自定义下载目录
-- 启动自动检查更新 / 设置页手动检查，应用内 32 线程下载升级
+- 启动自动检查更新 / 设置页手动检查，应用内最多 128 线程下载升级
 
 技术栈：Kotlin、Jetpack Compose、Material 3、Hilt、Room、DataStore、OkHttp、WorkManager；
 minSdk 26、targetSdk 34、compileSdk 35、Java 17。
@@ -22,7 +24,7 @@ gradle wrapper --gradle-version 8.7 --distribution-type bin
 ./gradlew :app:assembleDebug
 ```
 
-纯下载器不再依赖 `maven.mozilla.org`，只从 Google / Maven Central 拉依赖。
+浏览器改用系统 WebView 后不再依赖 `maven.mozilla.org`，只从 Google / Maven Central 拉依赖。
 `abiFilters` 仅保留 `arm64-v8a`；`versionName` / `versionCode` 默认 `26.11.0` / `2611000`，
 可用 `-PappVersionName=... -PappVersionCode=...` 覆盖。
 
@@ -51,5 +53,6 @@ gradle wrapper --gradle-version 8.7 --distribution-type bin
 
 ## 状态
 
-`26.11.0` 已由 CI 自动构建并发布。本版起移除内置浏览器区域，改为纯下载器、中文默认界面，
-代理切换为 `v6.gh-proxy.com`。
+`26.11.0` 起由 CI 自动构建发布。界面默认中文，代理切换为 `v6.gh-proxy.com`；
+本版把内置浏览器换成系统 WebView，单任务线程上限提到 128、并发任务上限提到 32，
+进度条刷新改为 50ms 一帧。

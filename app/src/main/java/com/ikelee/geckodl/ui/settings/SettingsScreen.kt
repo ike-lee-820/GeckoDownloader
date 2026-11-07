@@ -45,6 +45,9 @@ class SettingsViewModel @Inject constructor(
     fun setMaxTasks(v: Int) = viewModelScope.launch { store.setMaxTasks(v) }
     fun setRetry(v: Int) = viewModelScope.launch { store.setRetry(v) }
     fun setWifiOnly(v: Boolean) = viewModelScope.launch { store.setWifiOnly(v) }
+    fun setDesktop(v: Boolean) = viewModelScope.launch { store.setDesktopUa(v) }
+    fun setJs(v: Boolean) = viewModelScope.launch { store.setJavaScript(v) }
+    fun setSniff(v: Boolean) = viewModelScope.launch { store.setSniffEnabled(v) }
     fun setDynamic(v: Boolean) = viewModelScope.launch { store.setDynamicColor(v) }
     fun setDark(v: String) = viewModelScope.launch { store.setDarkMode(v) }
     fun setAutoCheck(v: Boolean) = viewModelScope.launch { store.setAutoCheckUpdate(v) }
@@ -61,12 +64,17 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Section(stringResource(R.string.settings_download)) {
-            SliderRow(stringResource(R.string.settings_threads), s.threadsPerTask, 1f..32f) { vm.setThreads(it) }
-            SliderRow(stringResource(R.string.settings_max_tasks), s.maxConcurrentTasks, 1f..8f) { vm.setMaxTasks(it) }
+            SliderRow(stringResource(R.string.settings_threads), s.threadsPerTask, 1f..128f) { vm.setThreads(it) }
+            SliderRow(stringResource(R.string.settings_max_tasks), s.maxConcurrentTasks, 1f..32f) { vm.setMaxTasks(it) }
             SliderRow(stringResource(R.string.settings_retry), s.retryCount, 0f..10f) { vm.setRetry(it) }
         }
         Section(stringResource(R.string.settings_network)) {
             SwitchRow(stringResource(R.string.settings_wifi_only), s.wifiOnly) { vm.setWifiOnly(it) }
+        }
+        Section(stringResource(R.string.settings_browser)) {
+            SwitchRow(stringResource(R.string.settings_desktop_ua), s.desktopUa) { vm.setDesktop(it) }
+            SwitchRow(stringResource(R.string.settings_javascript), s.javaScriptEnabled) { vm.setJs(it) }
+            SwitchRow(stringResource(R.string.settings_sniff), s.sniffEnabled) { vm.setSniff(it) }
         }
         Section(stringResource(R.string.settings_appearance)) {
             SwitchRow(stringResource(R.string.settings_dynamic_color), s.dynamicColor) { vm.setDynamic(it) }

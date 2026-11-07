@@ -77,14 +77,17 @@ class DownloadEngine @Inject constructor(
     init {
         scope.launch { settings.settings.collect { globalLimiter.bytesPerSecond = it.globalLimitKbps * 1024L } }
         scope.launch { schedule() }
-        // Speed sampler: once a second, bytes received since the last sample, per task.
+        // Speed sampler: every 250 ms, scaled back to bytes per second. A faster tick
+        // keeps the speed readout in step with the 50 ms progress snapshots.
         scope.launch {
+            val intervalMs = 250L
             while (true) {
-                kotlinx.coroutines.delay(1_000L)
+                kotlinx.coroutines.delay(intervalMs)
                 val next = HashMap<Long, Long>()
                 for ((id, counter) in counters) {
                     val now = counter.get()
-                    next[id] = now - (lastSample[id] ?: 0L)
+                    val delta = now - (lastSample[id] ?: 0L)
+                    next[id] = delta * 1000L / intervalMs
                     lastSample[id] = now
                 }
                 _speeds.value = next

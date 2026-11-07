@@ -23,10 +23,10 @@ import javax.inject.Singleton
 import kotlin.math.min
 
 /**
- * Downloads the update APK with up to 32 parallel ranged requests.
+ * Downloads the update APK with up to 128 parallel ranged requests.
  *
- * The v6.github.com proxy is tried first. Every candidate URL is probed, ones that honour
- * Range are preferred so the 32-thread path is actually used; if the proxy ignores Range or
+ * The v6.gh-proxy.com proxy is tried first. Every candidate URL is probed, ones that honour
+ * Range are preferred so the 128-thread path is actually used; if the proxy ignores Range or
  * fails, the original github.com URL is tried. A server that ignores Range falls back to a
  * single stream. The finished file is checked for size and ZIP/AndroidManifest structure so
  * an HTML error page from a proxy is never offered as an installable APK.
@@ -35,7 +35,7 @@ import kotlin.math.min
 class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
 
     companion object {
-        const val THREADS = 32
+        const val THREADS = 128
         private const val BUFFER = 64 * 1024
         private const val MIN_SEGMENT = 256L * 1024L
     }
@@ -212,7 +212,7 @@ class ApkDownloader @Inject constructor(private val http: OkHttpClient) {
         }
     }
 
-    /** At most [threads] ranges, each roughly >= 256 KB so a 50 MB APK really uses 32 threads. */
+    /** At most [threads] ranges, each roughly >= 256 KB so a 32 MB APK really uses 128 threads. */
     private fun plan(total: Long, threads: Int): List<LongRange> {
         val count = min(threads.toLong(), maxOf(1L, total / MIN_SEGMENT)).toInt().coerceAtLeast(1)
         val size = total / count

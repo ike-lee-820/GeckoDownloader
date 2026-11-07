@@ -11,6 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
@@ -33,20 +34,28 @@ object AppModule {
     fun provideChunkDao(db: AppDatabase): ChunkDao = db.chunkDao()
 
     /**
-     * One shared client for the download engine. Redirects are followed, and there is no
-     * read timeout so long-running chunk streams are not cut off. Connect and call timeouts
-     * keep stalled connections from holding a slot forever.
+     * One shared client for the download engine and the updater.
+     *
+     * OkHttp defaults to maxRequestsPerHost = 5, which would silently cap a 128-thread
+     * download to 5 concurrent ranges. Both limits are raised here; the connection pool
+     * grows with them. No read timeout so long-running chunk streams are not cut off.
      */
     @Provides
     @Singleton
     fun provideOkHttp(): OkHttpClient =
         OkHttpClient.Builder()
+            .dispatcher(
+                Dispatcher().apply {
+                    maxRequests = 512
+                    maxRequestsPerHost = 128
+                }
+            )
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)
             .followRedirects(true)
             .followSslRedirects(true)
             .retryOnConnectionFailure(true)
-            .connectionPool(ConnectionPool(32, 5, TimeUnit.MINUTES))
+            .connectionPool(ConnectionPool(128, 5, TimeUnit.MINUTES))
             .build()
 }

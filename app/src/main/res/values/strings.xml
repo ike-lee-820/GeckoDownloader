@@ -30,6 +30,7 @@
     <string name="status_canceled">已取消</string>
 
     <string name="browser_address_hint">搜索或输入网址</string>
+    <string name="browser_go">前往</string>
     <string name="browser_back">后退</string>
     <string name="browser_forward">前进</string>
     <string name="browser_reload">刷新</string>
@@ -53,11 +54,13 @@
     <string name="settings_storage">存储</string>
     <string name="settings_privacy">隐私</string>
     <string name="settings_about">关于与更新</string>
-    <string name="settings_threads">单任务线程数</string>
-    <string name="settings_max_tasks">最大并发任务数</string>
+    <string name="settings_threads">单任务线程数（1–128）</string>
+    <string name="settings_max_tasks">最大并发任务数（1–32）</string>
     <string name="settings_retry">失败重试次数</string>
     <string name="settings_wifi_only">仅 Wi-Fi 下载</string>
     <string name="settings_sniff">资源嗅探</string>
+    <string name="settings_desktop_ua">桌面版网页</string>
+    <string name="settings_javascript">启用 JavaScript</string>
     <string name="settings_dynamic_color">动态配色</string>
     <string name="settings_theme_mode">主题模式：%1$s</string>
     <string name="theme_system">跟随系统</string>
@@ -71,7 +74,7 @@
     <string name="update_checking">正在检查更新…</string>
     <string name="update_available">发现新版本</string>
     <string name="update_version">%1$s → %2$s</string>
-    <string name="update_in_app">应用内更新（32 线程）</string>
+    <string name="update_in_app">应用内更新（最多 128 线程）</string>
     <string name="update_external">应用外更新（浏览器打开）</string>
     <string name="update_cancel">取消</string>
     <string name="update_downloading">正在下载更新…</string>

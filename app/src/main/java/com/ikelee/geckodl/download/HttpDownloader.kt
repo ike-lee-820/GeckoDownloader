@@ -9,6 +9,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.job
 import okhttp3.Call
@@ -57,6 +59,25 @@ class HttpDownloader(
         onChunkUpdate: suspend (List<ChunkEntity>) -> Unit
     ) = coroutineScope {
         val counters = chunks.map { AtomicLong(it.done) }
+        // Immutable ranges: the ticker reads these while the workers update chunks in place.
+        val base = chunks.toList()
+        val finishedFlags = java.util.concurrent.atomic.AtomicIntegerArray(chunks.size)
+
+        // Progress used to be written only when a whole chunk finished, so with 128 chunks
+        // the bar barely moved. Emit a full snapshot every 50 ms (~20 fps) instead.
+        val ticker = launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(50L)
+                val snapshot = base.indices.map { i ->
+                    base[i].copy(
+                        done = counters[i].get(),
+                        finished = finishedFlags.get(i) == 1
+                    )
+                }
+                runCatching { onChunkUpdate(snapshot) }
+            }
+        }
+
         val jobs = chunks.mapIndexed { i, chunk ->
             async(Dispatchers.IO) {
                 if (chunk.finished) return@async
@@ -64,6 +85,7 @@ class HttpDownloader(
                 while (true) {
                     try {
                         copyChunk(spec, output, chunk, counters[i], onProgress)
+                        finishedFlags.set(i, 1)
                         chunks[i] = chunk.copy(done = counters[i].get(), finished = true)
                         onChunkUpdate(chunks.toList())
                         return@async
@@ -76,6 +98,8 @@ class HttpDownloader(
             }
         }
         jobs.awaitAll()
+        ticker.cancel()
+        onChunkUpdate(chunks.toList())
     }
 
     private suspend fun copyChunk(
@@ -114,8 +138,8 @@ class HttpDownloader(
         }
     }
 
-    /** Splits [total] bytes into at most [threads] ranges of at least [minChunk] bytes. */
-    fun plan(total: Long, threads: Int, minChunk: Long = 1L shl 20): List<ChunkEntity> {
+    /** Splits [total] bytes into at most [threads] ranges (256 KB each by default). */
+    fun plan(total: Long, threads: Int, minChunk: Long = 1L shl 18): List<ChunkEntity> {
         if (total <= 0L) return listOf(ChunkEntity(0, 0, 0, -1, 0, false))
         val count = min(threads.toLong(), maxOf(1L, total / minChunk)).toInt().coerceAtLeast(1)
         val size = total / count

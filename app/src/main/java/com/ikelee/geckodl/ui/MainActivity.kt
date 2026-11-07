@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import com.ikelee.geckodl.R
 import com.ikelee.geckodl.data.settings.AppSettings
 import com.ikelee.geckodl.data.settings.SettingsStore
 import com.ikelee.geckodl.download.DownloadService
+import com.ikelee.geckodl.ui.browser.BrowserScreen
 import com.ikelee.geckodl.ui.downloads.DownloadsScreen
 import com.ikelee.geckodl.ui.settings.SettingsScreen
 import com.ikelee.geckodl.ui.theme.GdlTheme
@@ -56,6 +58,7 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 private const val ROUTE_DOWNLOADS = "downloads"
+private const val ROUTE_BROWSER = "browser"
 private const val ROUTE_SETTINGS = "settings"
 
 @AndroidEntryPoint
@@ -103,6 +106,7 @@ fun AppRoot(updateManager: UpdateManager) {
             NavigationBar {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     BottomItem(nav, current, ROUTE_DOWNLOADS, R.string.tab_downloads, Icons.Outlined.Download)
+                    BottomItem(nav, current, ROUTE_BROWSER, R.string.tab_browser, Icons.Outlined.Language)
                     BottomItem(nav, current, ROUTE_SETTINGS, R.string.tab_settings, Icons.Outlined.Settings)
                 }
             }
@@ -114,6 +118,7 @@ fun AppRoot(updateManager: UpdateManager) {
             modifier = Modifier.fillMaxSize().padding(inner)
         ) {
             composable(ROUTE_DOWNLOADS) { DownloadsScreen() }
+            composable(ROUTE_BROWSER) { BrowserScreen() }
             composable(ROUTE_SETTINGS) { SettingsScreen(updateManager = updateManager) }
         }
     }

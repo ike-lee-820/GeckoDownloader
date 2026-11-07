@@ -90,7 +90,7 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    /** "In-app update": 32 parallel ranged downloads with live progress. */
+    /** "In-app update": up to 128 parallel ranged downloads with live progress. */
     fun startInAppDownload() {
         val release = (_state.value as? UpdateUiState.Available)?.release ?: return
         downloadJob?.cancel()
@@ -109,9 +109,10 @@ class UpdateManager @Inject constructor(
                     dest = dest,
                     threads = ApkDownloader.THREADS
                 ) { done, total, threads ->
-                    // 32 threads can emit hundreds of callbacks per second; throttle recomposition.
+                    // 128 threads emit thousands of callbacks per second. Throttle to ~60 fps
+                    // (16 ms) so the progress bar stays responsive without flooding Compose.
                     val now = SystemClock.elapsedRealtime()
-                    if (now - lastProgressEmit >= 80L || done >= total) {
+                    if (now - lastProgressEmit >= 16L || done >= total) {
                         lastProgressEmit = now
                         _state.value = UpdateUiState.Downloading(release, done, total, threads)
                     }

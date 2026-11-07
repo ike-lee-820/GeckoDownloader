@@ -1,4 +1,4 @@
-name: 发布 arm64-v8a 纯下载器
+name: 发布 arm64-v8a 版本
 
 # 自动发版：push 到 main（默认分支）就构建 arm64-v8a release APK 并发布 GitHub Release。
 # 同一次提交的重跑不会重复发版；版本号按 YY.MM.N 自动迭代，无需手动打 tag。
@@ -297,7 +297,8 @@ jobs:
           {
             echo "## Gecko 下载器 ${VERSION}"
             echo
-            echo "- 形态：**纯下载器**（已移除内置浏览器 / GeckoView 引擎），界面默认中文"
+            echo "- 形态：内置**系统 WebView** 浏览器（已移除 GeckoView 引擎），界面默认中文"
+            echo "- 下载：单任务最多 128 线程、最多 32 个并发任务，进度每 50ms 刷新"
             echo "- 架构：仅 \`arm64-v8a\` (ARMv8-A 64-bit)，不含 armeabi-v7a / x86 / x86_64"
             echo "- 版本规则：\`YY.MM.N\`（年.月.当月序号），本次 \`${VERSION}\`"
             echo "- 构建：AGP 8.5.2 / Gradle 8.7 / JDK 17 / compileSdk 35 / R8"
