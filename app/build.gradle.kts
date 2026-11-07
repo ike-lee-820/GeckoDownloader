@@ -21,7 +21,9 @@ val geckoviewVersion: String = providers.gradleProperty("geckoviewVersion")
 
 android {
     namespace = "com.ikelee.geckodl"
-    compileSdk = 34
+    // androidx.core 1.15.0 requires compileSdk >= 35. targetSdk stays 34 to avoid
+    // opting into Android 15 runtime behaviour changes.
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.ikelee.geckodl"

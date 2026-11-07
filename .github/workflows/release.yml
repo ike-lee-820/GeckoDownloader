@@ -123,8 +123,8 @@ jobs:
           echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
           echo "$(dirname "${SDKMGR}")" >> "$GITHUB_PATH"
           yes | "${SDKMGR}" --licenses > /dev/null 2>&1 || true
-          "${SDKMGR}" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" > /dev/null
-          "${SDKMGR}" --list_installed | grep -E 'platforms;android-34|build-tools;34.0.0' || true
+          "${SDKMGR}" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" > /dev/null
+          "${SDKMGR}" --list_installed | grep -E 'platforms;android-35|build-tools;35.0.0' || true
 
       - name: Install Gradle 8.7
         shell: bash
@@ -146,7 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           gradle --version
-          gradle :app:assembleRelease --no-daemon --stacktrace \
+          gradle :app:assembleRelease --no-daemon --stacktrace --continue \
             -PappVersionName="${VERSION}" \
             -PappVersionCode="${VERSION_CODE}" \
             -PgeckoviewVersion="${GV_VERSION}" 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"

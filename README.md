@@ -1,7 +1,8 @@
 # GeckoDownloader
 
 Android app that combines a download manager, a GeckoView browser, and a resource sniffer.
-Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, OkHttp, minSdk 26, targetSdk 34, Java 17.
+Kotlin, Jetpack Compose, Material 3, Hilt, Room, DataStore, OkHttp, minSdk 26, targetSdk 34,
+compileSdk 35 (required by androidx.core 1.15), Java 17.
 
 ## Build
 
