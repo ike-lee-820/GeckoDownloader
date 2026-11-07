@@ -7,17 +7,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -96,9 +104,11 @@ fun AppRoot(updateManager: UpdateManager) {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                BottomItem(nav, current, ROUTE_DOWNLOADS, R.string.tab_downloads, Icons.Outlined.Download)
-                BottomItem(nav, current, ROUTE_BROWSER, R.string.tab_browser, Icons.Outlined.Language)
-                BottomItem(nav, current, ROUTE_SETTINGS, R.string.tab_settings, Icons.Outlined.Settings)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    BottomItem(nav, current, ROUTE_DOWNLOADS, R.string.tab_downloads, Icons.Outlined.Download)
+                    BottomItem(nav, current, ROUTE_BROWSER, R.string.tab_browser, Icons.Outlined.Language)
+                    BottomItem(nav, current, ROUTE_SETTINGS, R.string.tab_settings, Icons.Outlined.Settings)
+                }
             }
         }
     ) { inner ->
@@ -117,23 +127,30 @@ fun AppRoot(updateManager: UpdateManager) {
 }
 
 @Composable
-private fun BottomItem(
+private fun RowScope.BottomItem(
     nav: NavController,
     current: String?,
     route: String,
     label: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+    icon: ImageVector
 ) {
-    NavigationBarItem(
-        selected = current == route,
-        onClick = {
-            nav.navigate(route) {
-                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
+    val selected = current == route
+    val tint = if (selected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    val title = stringResource(label)
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .clickable {
+                nav.navigate(route) {
+                    popUpTo(ROUTE_DOWNLOADS) { inclusive = false }
+                    launchSingleTop = true
+                }
             }
-        },
-        icon = { Icon(icon, contentDescription = stringResource(label)) },
-        label = { Text(stringResource(label)) }
-    )
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(icon, contentDescription = title, tint = tint)
+        Text(title, color = tint, style = MaterialTheme.typography.labelSmall)
+    }
 }

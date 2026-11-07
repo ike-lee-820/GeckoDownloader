@@ -90,19 +90,8 @@ class TabSessionManager @Inject constructor(
 
     private fun attachDelegates(id: String, session: GeckoSession, isPrivate: Boolean) {
         session.navigationDelegate = object : GeckoSession.NavigationDelegate {
-            override fun onLocationChange(
-                session: GeckoSession,
-                url: String?,
-                perms: MutableList<org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission>,
-                hasUserGesture: Boolean
-            ) {
-                val u = url ?: return
-                update(id) { it.copy(url = u) }
-                if (!isPrivate && u != "about:blank") {
-                    scope.launch { browserDao.addHistory(HistoryEntity(url = u, title = u)) }
-                }
-            }
-
+            // GeckoView 120 has no onLocationChange with this signature. URL and history
+            // are handled by ProgressDelegate.onPageStart below.
             override fun onCanGoBack(session: GeckoSession, canGoBack: Boolean) {
                 update(id) { it.copy(canGoBack = canGoBack) }
             }
@@ -123,7 +112,7 @@ class TabSessionManager @Inject constructor(
             override fun onNewSession(session: GeckoSession, uri: String): GeckoResult<GeckoSession> {
                 // window.open and target=_blank. Open it as a new tab and hand GeckoView its session.
                 val newId = newTab(uri, isPrivate, null, false)
-                return GeckoResult.fromValue(sessions[newId])
+                return GeckoResult.fromValue(sessions.getValue(newId))
             }
 
             override fun onLoadError(
@@ -139,6 +128,9 @@ class TabSessionManager @Inject constructor(
         session.progressDelegate = object : GeckoSession.ProgressDelegate {
             override fun onPageStart(session: GeckoSession, url: String) {
                 update(id) { it.copy(loading = true, progress = 0, url = url) }
+                if (!isPrivate && url != "about:blank") {
+                    scope.launch { browserDao.addHistory(HistoryEntity(url = url, title = url)) }
+                }
             }
 
             override fun onPageStop(session: GeckoSession, success: Boolean) {
